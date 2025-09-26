@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Homepage — Visitor Counter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass {
+      background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.65));
+      backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-r from-indigo-50 via-white to-purple-50 flex items-center justify-center p-6">
+
+  <main class="w-full max-w-2xl">
+    <!-- Header -->
+    <header class="mb-6 text-center">
+      <h1 class="text-3xl font-extrabold text-gray-800">Homepage Visitor Counter</h1>
+      <p class="mt-2 text-gray-500 text-sm">Reset visitor count & send instant Telegram notification</p>
+    </header>
+
+    <!-- Card -->
+    <section class="glass shadow-2xl rounded-2xl p-6">
+      <div class="flex items-center gap-4">
+        <div class="bg-indigo-100 p-4 rounded-xl">
+          <svg class="w-10 h-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v8m4-4H8"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">Reset Visitor Count</h2>
+          <p class="text-sm text-gray-500">Click the button below to reset the counter to <strong>1</strong>. This will also notify Telegram.</p>
+        </div>
+      </div>
+
+      <!-- Button -->
+      <div class="mt-6 flex justify-end">
+        <button id="resetBtn"
+          class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-full shadow-lg hover:scale-105 transition transform flex items-center gap-2">
+          <svg id="btnIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h4l3-7 4 18 3-7h4"/>
+          </svg>
+          Reset Count
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 hidden items-center justify-center z-50">
+    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="relative bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
+      <h3 class="text-lg font-semibold text-gray-800">Confirm Reset</h3>
+      <p class="mt-2 text-gray-600 text-sm">Are you sure you want to reset the visitor count to <strong>1</strong>?</p>
+      <div class="mt-5 flex justify-end gap-3">
+        <button id="cancelModal" class="px-4 py-2 border rounded-md">Cancel</button>
+        <button id="confirmReset" class="px-4 py-2 bg-red-600 text-white rounded-md">Yes, Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50"></div>
+
+  <script>
+    const API_ENDPOINT = "/api/reset"; // Flask endpoint
+
+    const resetBtn = document.getElementById("resetBtn");
+    const modal = document.getElementById("modal");
+    const cancelModal = document.getElementById("cancelModal");
+    const confirmReset = document.getElementById("confirmReset");
+    const toastRoot = document.getElementById("toast");
+
+    function showToast(message, type="info", timeout=4000) {
+      const el = document.createElement("div");
+      el.className = "mb-3 p-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 glass " +
+                     (type==="success" ? "text-green-700" : "text-red-700");
+      el.innerHTML = (type==="success"
+        ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+        : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+      ) + `<span>${message}</span>`;
+      toastRoot.appendChild(el);
+      setTimeout(()=> el.remove(), timeout);
+    }
+
+    resetBtn.addEventListener("click", () => {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    });
+
+    cancelModal.addEventListener("click", () => {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    });
+
+    confirmReset.addEventListener("click", async () => {
+      const originalHTML = resetBtn.innerHTML;
+      resetBtn.innerHTML = "Resetting...";
+      resetBtn.disabled = true;
+
+      try {
+        const res = await fetch(API_ENDPOINT, { method: "POST" });
+        if (!res.ok) throw new Error("Server error " + res.status);
+        const data = await res.json();
+        if (data.success) {
+          showToast("Counter reset successfully ✓", "success");
+        } else {
+          showToast("Reset failed!", "error");
+        }
+      } catch (err) {
+        showToast(err.message, "error", 6000);
+      } finally {
+        resetBtn.innerHTML = originalHTML;
+        resetBtn.disabled = false;
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+    });
+  </script>
+</body>
+</html>
