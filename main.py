@@ -75,6 +75,11 @@ def reset_logic():
 def index():
     return send_from_directory(".", "index.html")
 
+# 🔹 Favicon route (error fix)
+@app.route("/favicon.ico")
+def favicon():
+    return "", 204
+
 # 🔹 API Reset endpoint
 @app.route("/api/reset", methods=["POST"])
 def reset_endpoint():
@@ -85,6 +90,6 @@ def reset_endpoint():
         return jsonify({"success": False, "error": "Firebase update failed"}), 500
 
 
+# 🔹 Local run ke liye
 if __name__ == "__main__":
-    # Flask server run karo
     app.run(host="0.0.0.0", port=5000, debug=True)
